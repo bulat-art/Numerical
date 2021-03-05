@@ -1,0 +1,371 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "kernelspec": {
+      "display_name": "Python 3",
+      "language": "python",
+      "name": "python3"
+    },
+    "language_info": {
+      "codemirror_mode": {
+        "name": "ipython",
+        "version": 3
+      },
+      "file_extension": ".py",
+      "mimetype": "text/x-python",
+      "name": "python",
+      "nbconvert_exporter": "python",
+      "pygments_lexer": "ipython3",
+      "version": "3.7.6"
+    },
+    "colab": {
+      "name": "Полное_Якоби_матр.ipynb",
+      "provenance": [],
+      "toc_visible": true
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "N_ZKekJElK8M"
+      },
+      "source": [
+        "import numpy as np\n",
+        "import numpy.linalg as lin\n",
+        "import time\n",
+        "A=np.loadtxt(\"in.txt\",delimiter=\" \")\n",
+        "n=A.shape[1]\n",
+        "M=np.loadtxt(\"in.txt\",delimiter=\" \")\n",
+        "y_0=np.random.rand(3)# первое приближение(случайный вектор)\n",
+        "y_0=y_0/lin.norm(y_0)\n",
+        "eps=1e-9\n",
+        "k=0"
+      ],
+      "execution_count": 14,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "p75URzx8lK8T"
+      },
+      "source": [
+        "### Исходная матрица"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "YZ2ZJRB1lK8X",
+        "outputId": "100be233-22fc-4eea-8d42-09ae034bbbbf"
+      },
+      "source": [
+        "M"
+      ],
+      "execution_count": 15,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "array([[-0.820053, -0.135416,  0.269479],\n",
+              "       [-0.135416,  0.514864,  0.027061],\n",
+              "       [ 0.269479,  0.027061, -0.833651]])"
+            ]
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 15
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "9asrFsC-lK8d",
+        "outputId": "87e9af07-ab28-4e9e-cd1c-85c692e97520"
+      },
+      "source": [
+        "np.triu(abs(M),k=1)"
+      ],
+      "execution_count": 16,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "array([[0.      , 0.135416, 0.269479],\n",
+              "       [0.      , 0.      , 0.027061],\n",
+              "       [0.      , 0.      , 0.      ]])"
+            ]
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 16
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "bWowxJf1lK8k"
+      },
+      "source": [
+        "### Поиск макс. эл."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "4aQP8_fplK8q"
+      },
+      "source": [
+        "def maxind(A):\n",
+        "    Diag=np.triu(abs(A),k=1)# обнуление нижних компонент\n",
+        "    ind = np.unravel_index(np.argmax(Diag, axis=None), Diag.shape)# индекс максмимального элемента\n",
+        "    return ind"
+      ],
+      "execution_count": 17,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "gr4ExKXalK8s"
+      },
+      "source": [
+        "X=np.identity(n)# единичная матрица"
+      ],
+      "execution_count": 19,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "i7La6sWXlK8u"
+      },
+      "source": [
+        "## Метод Якоби"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "h_Wvm9LnlK8x",
+        "outputId": "68d00b48-88b8-4fe7-8ce0-863748ad6dbd"
+      },
+      "source": [
+        "start=time.time()\n",
+        "while abs(A[maxind(A)])>eps:\n",
+        "    V=np.identity(n)# будущая матрица поворта\n",
+        "    i=maxind(A)[0]# строка где находится макимальный элемент\n",
+        "    j=maxind(A)[1]# столбец где находится макс элемент\n",
+        "    d=np.sqrt((A[i,i]-A[j,j])**2+4*A[i,j]**2)# формлы для матрицы V()\n",
+        "    c=np.sqrt((1+abs(A[i,i]-A[j,j])/d)/2)\n",
+        "    s=np.sign(A[i,j]*(A[i,i]-A[j,j]))*np.sqrt((1-abs(A[i,i]-A[j,j])/d)/2)\n",
+        "    k+=1\n",
+        "    lamd=A[i,i]\n",
+        "    V[i,i]=c\n",
+        "    V[j,j]=c\n",
+        "    V[i,j]=-s\n",
+        "    V[j,i]=s\n",
+        "    X=X@V# для нахождения собственных векторов\n",
+        "    A=np.transpose(V)@A@V\n",
+        "end=time.time()\n",
+        "end-start    \n",
+        "    "
+      ],
+      "execution_count": 20,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "0.0012128353118896484"
+            ]
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 20
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "cp0jJ5salK80"
+      },
+      "source": [
+        "lamds=[A[i,i] for i in range(3)]\n",
+        "S_Vect=[X[:,i] for i in range(3)]\n",
+        "Norm_Vect_nev=[np.max(M@S_Vect[i]-lamds[i]*S_Vect[i]) for i in range(3)]"
+      ],
+      "execution_count": 21,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "yahdhIdWlK87"
+      },
+      "source": [
+        "Количество итераций"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "h8-_w1WulK89",
+        "outputId": "60905f58-632b-4be4-d506-685c5987650b"
+      },
+      "source": [
+        "k"
+      ],
+      "execution_count": 22,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "6"
+            ]
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 22
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "g841JlZFlK8_"
+      },
+      "source": [
+        "### С.ч."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "ykxBRtZJlK9A",
+        "outputId": "4820885b-8d3c-43b6-b624-a0d94ddeab1a"
+      },
+      "source": [
+        "lamds"
+      ],
+      "execution_count": 23,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "[-0.5628168212209222, 0.5284622834463897, -1.1044854622254674]"
+            ]
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 23
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "0LNE1YHalK9C"
+      },
+      "source": [
+        "### С.в."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "as1DWwbklK9D",
+        "outputId": "967a4323-a051-440f-da2e-62a0818aceb5"
+      },
+      "source": [
+        "S_Vect"
+      ],
+      "execution_count": 24,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "[array([0.70356816, 0.07065113, 0.70710697]),\n",
+              " array([-9.99160346e-02,  9.94995872e-01,  2.27752758e-07]),\n",
+              " array([-0.7035685 , -0.07065148,  0.70710659])]"
+            ]
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 24
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "3Bzd2iTXlK9F"
+      },
+      "source": [
+        "### Невязка"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "e5vqE0ublK9G",
+        "outputId": "9ad2cf90-eafa-439c-e14f-6f4dfda3f4da"
+      },
+      "source": [
+        "Norm_Vect_nev"
+      ],
+      "execution_count": 25,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "[6.676874608757544e-10, -2.3714363805993344e-13, -6.684143516455521e-11]"
+            ]
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 25
+        }
+      ]
+    }
+  ]
+}
